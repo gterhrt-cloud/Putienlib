@@ -4,7 +4,7 @@
 ║                      PutienLib v1.0.0                         ║
 ║                   Modern UI Framework                         ║
 ║                                                               ║
-║         Clean Code • Dark Theme • Human Readable              ║
+║         Clean Code • Dark Theme • By Marzstda                 ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 ]]
