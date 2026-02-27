@@ -28,6 +28,21 @@ PutienLib.Theme = {
 }
 
 -- ============================================================
+-- 🖼️ GLOBAL SCREENGUI (wie Orion)
+-- ============================================================
+
+local PutienScreenGui = Instance.new("ScreenGui")
+PutienScreenGui.Name = "PutienLib"
+PutienScreenGui.ResetOnSpawn = false
+
+if syn then
+    syn.protect_gui(PutienScreenGui)
+    PutienScreenGui.Parent = game.CoreGui
+else
+    PutienScreenGui.Parent = gethui() or game.CoreGui
+end
+
+-- ============================================================
 -- 🖼️ WINDOW CLASS
 -- ============================================================
 
@@ -40,25 +55,13 @@ function Window.new(name)
     self.Tabs = {}
     self.TabButtons = {}
 
-    -- Create ScreenGui FIRST, then set Parent
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PutienLib_" .. name
-    screenGui.ResetOnSpawn = false
-
-    -- Set Parent (Orion method)
-    if syn then
-        syn.protect_gui(screenGui)
-    end
-    screenGui.Parent = gethui() or game:GetService("CoreGui")
-
-    self.ScreenGui = screenGui
-
-    -- Main Container
+    -- Main Container (Child of global ScreenGui)
     local container = Instance.new("Frame")
+    container.Name = "Window_" .. name
     container.Size = UDim2.new(0, 500, 0, 650)
     container.BackgroundColor3 = PutienLib.Theme.Background
     container.BorderSizePixel = 0
-    container.Parent = screenGui
+    container.Parent = PutienScreenGui
 
     self.Container = container
 
@@ -96,7 +99,7 @@ function Window.new(name)
     self.ContentArea.BorderSizePixel = 0
     self.ContentArea.Parent = container
 
-    -- Drag functionality
+    -- Drag
     local dragging = false
     local dragStart = nil
     local dragPos = nil
@@ -259,18 +262,6 @@ function Window:CreateTab(name)
     end
 
     return tab
-end
-
-function Window:Show()
-    self.ScreenGui.Enabled = true
-end
-
-function Window:Hide()
-    self.ScreenGui.Enabled = false
-end
-
-function Window:Destroy()
-    self.ScreenGui:Destroy()
 end
 
 -- ============================================================
