@@ -6,116 +6,277 @@
 ╚═══════════════════════════════════════════════════════════════╝
 ]]
 
-local PutienLib = {}
-PutienLib.Version = "1.0.0"
-PutienLib.Instances = {}
-
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
--- ============================================================
--- 🎨 DARK THEME
--- ============================================================
-
-PutienLib.Theme = {
-    Background = Color3.fromRGB(20, 20, 20),
-    Surface = Color3.fromRGB(25, 25, 25),
-    Text = Color3.fromRGB(240, 240, 240),
-    TextSecondary = Color3.fromRGB(180, 180, 180),
-    Primary = Color3.fromRGB(100, 160, 255),
-    Hover = Color3.fromRGB(35, 35, 35),
-}
-
--- ============================================================
--- 🖼️ GLOBAL SCREENGUI (wie Orion)
--- ============================================================
-
-local PutienScreenGui = Instance.new("ScreenGui")
-PutienScreenGui.Name = "PutienLib"
-PutienScreenGui.ResetOnSpawn = false
-
-if syn then
-    syn.protect_gui(PutienScreenGui)
-    PutienScreenGui.Parent = game.CoreGui
-else
-    PutienScreenGui.Parent = gethui() or game.CoreGui
+-- Clean up old GUI if it exists
+local oldGui = PlayerGui:FindFirstChild("PutienLibGui")
+if oldGui then
+    oldGui:Destroy()
 end
 
--- ============================================================
--- 🖼️ WINDOW CLASS
--- ============================================================
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PutienLibGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
-local Window = {}
-Window.__index = Window
+-- Main Container
+local MainContainer = Instance.new("Frame")
+MainContainer.Name = "MainContainer"
+MainContainer.Size = UDim2.new(0, 750, 0, 550)
+MainContainer.Position = UDim2.new(0.5, -375, 0.5, -275)
+MainContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+MainContainer.BorderSizePixel = 0
+MainContainer.Parent = ScreenGui
 
-function Window.new(name)
-    local self = setmetatable({}, Window)
-    self.Name = name
-    self.Tabs = {}
-    self.TabButtons = {}
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 15)
+MainCorner.Parent = MainContainer
 
-    -- Main Container (Child of global ScreenGui)
-    local container = Instance.new("Frame")
-    container.Name = "Window_" .. name
-    container.Size = UDim2.new(0, 500, 0, 650)
-    container.BackgroundColor3 = PutienLib.Theme.Background
-    container.BorderSizePixel = 0
-    container.Parent = PutienScreenGui
+local Shadow = Instance.new("Frame")
+Shadow.Name = "Shadow"
+Shadow.Size = UDim2.new(1, 20, 1, 20)
+Shadow.Position = UDim2.new(0, -10, 0, -10)
+Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.BorderSizePixel = 0
+Shadow.ZIndex = -1
+Shadow.Parent = MainContainer
 
-    self.Container = container
+local ShadowCorner = Instance.new("UICorner")
+ShadowCorner.CornerRadius = UDim.new(0, 20)
+ShadowCorner.Parent = Shadow
 
-    -- Topbar
-    local topbar = Instance.new("Frame")
-    topbar.Size = UDim2.new(1, 0, 0, 40)
-    topbar.BackgroundColor3 = PutienLib.Theme.Surface
-    topbar.BorderSizePixel = 0
-    topbar.Parent = container
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 60)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 35, 60)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainContainer
 
-    local title = Instance.new("TextLabel")
-    title.Text = name
-    title.BackgroundTransparency = 1
-    title.TextColor3 = PutienLib.Theme.Text
-    title.TextSize = 16
-    title.Font = Enum.Font.GothamMedium
-    title.Size = UDim2.new(1, -20, 0, 40)
-    title.Position = UDim2.new(0, 10, 0, 0)
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = topbar
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 15)
+TitleCorner.Parent = TitleBar
 
-    -- Tab Bar
-    self.TabBar = Instance.new("Frame")
-    self.TabBar.Size = UDim2.new(1, 0, 0, 35)
-    self.TabBar.Position = UDim2.new(0, 0, 0, 40)
-    self.TabBar.BackgroundColor3 = PutienLib.Theme.Surface
-    self.TabBar.BorderSizePixel = 0
-    self.TabBar.Parent = container
+-- Title Label
+local TitleText = Instance.new("TextLabel")
+TitleText.Name = "TitleText"
+TitleText.Size = UDim2.new(0, 400, 0, 40)
+TitleText.Position = UDim2.new(0, 20, 0, 10)
+TitleText.BackgroundTransparency = 1
+TitleText.BorderSizePixel = 0
+TitleText.Text = "PutienLib v1.0.0"
+TitleText.TextColor3 = Color3.fromRGB(100, 200, 255)
+TitleText.TextSize = 18
+TitleText.Font = Enum.Font.GothamBold
+TitleText.Parent = TitleBar
 
-    -- Content Area
-    self.ContentArea = Instance.new("Frame")
-    self.ContentArea.Size = UDim2.new(1, 0, 1, -75)
-    self.ContentArea.Position = UDim2.new(0, 0, 0, 75)
-    self.ContentArea.BackgroundColor3 = PutienLib.Theme.Background
-    self.ContentArea.BorderSizePixel = 0
-    self.ContentArea.Parent = container
+-- Tab System (Left Side)
+local TabPanel = Instance.new("Frame")
+TabPanel.Name = "TabPanel"
+TabPanel.Size = UDim2.new(0, 150, 1, -60)
+TabPanel.Position = UDim2.new(0, 0, 0, 60)
+TabPanel.BackgroundColor3 = Color3.fromRGB(30, 40, 70)
+TabPanel.BorderSizePixel = 0
+TabPanel.Parent = MainContainer
 
-    -- Drag
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.Padding = UDim.new(0, 5)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Parent = TabPanel
+
+-- Content Area
+local ContentArea = Instance.new("ScrollingFrame")
+ContentArea.Name = "ContentArea"
+ContentArea.Size = UDim2.new(1, -150, 1, -120)
+ContentArea.Position = UDim2.new(0, 150, 0, 60)
+ContentArea.BackgroundTransparency = 1
+ContentArea.BorderSizePixel = 0
+ContentArea.ScrollBarThickness = 8
+ContentArea.ScrollBarImageColor3 = Color3.fromRGB(100, 200, 255)
+ContentArea.CanvasSize = UDim2.new(0, 0, 0, 600)
+ContentArea.Parent = MainContainer
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 15)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = ContentArea
+
+-- Footer (User Info)
+local Footer = Instance.new("Frame")
+Footer.Name = "Footer"
+Footer.Size = UDim2.new(1, 0, 0, 60)
+Footer.Position = UDim2.new(0, 0, 1, -60)
+Footer.BackgroundColor3 = Color3.fromRGB(20, 28, 50)
+Footer.BorderSizePixel = 0
+Footer.Parent = MainContainer
+
+local FooterCorner = Instance.new("UICorner")
+FooterCorner.CornerRadius = UDim.new(0, 10)
+FooterCorner.Parent = Footer
+
+-- Profile Picture (Placeholder)
+local ProfilePic = Instance.new("ImageLabel")
+ProfilePic.Name = "ProfilePic"
+ProfilePic.Size = UDim2.new(0, 45, 0, 45)
+ProfilePic.Position = UDim2.new(0, 8, 0.5, -23)
+ProfilePic.BackgroundColor3 = Color3.fromRGB(80, 180, 255)
+ProfilePic.BorderSizePixel = 0
+ProfilePic.BackgroundTransparency = 0
+ProfilePic.Parent = Footer
+
+local ProfileCorner = Instance.new("UICorner")
+ProfileCorner.CornerRadius = UDim.new(1, 0)
+ProfileCorner.Parent = ProfilePic
+
+-- Username
+local Username = Instance.new("TextLabel")
+Username.Name = "Username"
+Username.Size = UDim2.new(0, 180, 0, 22)
+Username.Position = UDim2.new(0, 60, 0, 8)
+Username.BackgroundTransparency = 1
+Username.Text = "By Marzstda"
+Username.TextColor3 = Color3.fromRGB(200, 220, 255)
+Username.TextSize = 13
+Username.Font = Enum.Font.GothamBold
+Username.TextXAlignment = Enum.TextXAlignment.Left
+Username.Parent = Footer
+
+-- Status
+local Status = Instance.new("TextLabel")
+Status.Name = "Status"
+Status.Size = UDim2.new(0, 180, 0, 18)
+Status.Position = UDim2.new(0, 60, 0, 30)
+Status.BackgroundTransparency = 1
+Status.Text = "Framework v1.0.0"
+Status.TextColor3 = Color3.fromRGB(150, 170, 220)
+Status.TextSize = 11
+Status.Font = Enum.Font.Gotham
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Footer
+
+-- Menu API
+local Menu = {}
+
+function Menu:Name(newTitle)
+    TitleText.Text = newTitle
+end
+
+-- Notification System
+local function CreateNotification(title, message, duration)
+    duration = duration or 3
+    local NotifContainer = Instance.new("Frame")
+    NotifContainer.Name = "Notification"
+    NotifContainer.Size = UDim2.new(0, 300, 0, 80)
+    NotifContainer.Position = UDim2.new(1, -310, 1, -100)
+    NotifContainer.BackgroundColor3 = Color3.fromRGB(25, 35, 60)
+    NotifContainer.BorderSizePixel = 0
+    NotifContainer.Parent = MainContainer
+
+    local NotifCorner = Instance.new("UICorner")
+    NotifCorner.CornerRadius = UDim.new(0, 10)
+    NotifCorner.Parent = NotifContainer
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "Title"
+    TitleLabel.Size = UDim2.new(1, -20, 0, 25)
+    TitleLabel.Position = UDim2.new(0, 15, 0, 10)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+    TitleLabel.TextSize = 14
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = NotifContainer
+
+    local MessageLabel = Instance.new("TextLabel")
+    MessageLabel.Name = "Message"
+    MessageLabel.Size = UDim2.new(1, -20, 0, 35)
+    MessageLabel.Position = UDim2.new(0, 15, 0, 35)
+    MessageLabel.BackgroundTransparency = 1
+    MessageLabel.Text = message
+    MessageLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
+    MessageLabel.TextSize = 11
+    MessageLabel.Font = Enum.Font.Gotham
+    MessageLabel.TextXAlignment = Enum.TextXAlignment.Left
+    MessageLabel.TextWrapped = true
+    MessageLabel.Parent = NotifContainer
+
+    local slideIn = TweenService:Create(NotifContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = UDim2.new(1, -310, 1, -100) })
+    slideIn:Play()
+
+    task.wait(duration)
+
+    local slideOut = TweenService:Create(NotifContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(1, 10, 1, -100) })
+    slideOut:Play()
+    slideOut.Completed:Connect(function()
+        NotifContainer:Destroy()
+    end)
+end
+
+-- Slider System
+local function CreateSlider(parent, title, min, max, default, callback)
+    local SliderContainer = Instance.new("Frame")
+    SliderContainer.Name = title .. "SliderContainer"
+    SliderContainer.Size = UDim2.new(1, 0, 0, 70)
+    SliderContainer.BackgroundTransparency = 1
+    SliderContainer.Parent = parent
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "Title"
+    TitleLabel.Size = UDim2.new(1, -20, 0, 20)
+    TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
+    TitleLabel.TextSize = 12
+    TitleLabel.Font = Enum.Font.GothamSemibold
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = SliderContainer
+
+    local SliderBackground = Instance.new("Frame")
+    SliderBackground.Name = "SliderBg"
+    SliderBackground.Size = UDim2.new(1, -20, 0, 6)
+    SliderBackground.Position = UDim2.new(0, 10, 0, 28)
+    SliderBackground.BackgroundColor3 = Color3.fromRGB(35, 45, 75)
+    SliderBackground.BorderSizePixel = 0
+    SliderBackground.Parent = SliderContainer
+
+    local SliderCorner = Instance.new("UICorner")
+    SliderCorner.CornerRadius = UDim.new(0, 3)
+    SliderCorner.Parent = SliderBackground
+
+    local SliderFill = Instance.new("Frame")
+    SliderFill.Name = "SliderFill"
+    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    SliderFill.BorderSizePixel = 0
+    SliderFill.Parent = SliderBackground
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(0, 3)
+    FillCorner.Parent = SliderFill
+
+    local ValueLabel = Instance.new("TextLabel")
+    ValueLabel.Name = "Value"
+    ValueLabel.Size = UDim2.new(0, 50, 0, 20)
+    ValueLabel.Position = UDim2.new(1, -60, 0, 24)
+    ValueLabel.BackgroundTransparency = 1
+    ValueLabel.Text = tostring(math.floor(default))
+    ValueLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+    ValueLabel.TextSize = 12
+    ValueLabel.Font = Enum.Font.GothamBold
+    ValueLabel.Parent = SliderContainer
+
     local dragging = false
-    local dragStart = nil
-    local dragPos = nil
+    local currentValue = default
 
-    topbar.InputBegan:Connect(function(input)
+    SliderBackground.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            dragStart = input.Position
-            dragPos = container.Position
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and dragStart then
-            local delta = input.Position - dragStart
-            container.Position = dragPos + UDim2.new(0, delta.X, 0, delta.Y)
         end
     end)
 
@@ -125,175 +286,229 @@ function Window.new(name)
         end
     end)
 
-    return self
-end
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = input.Position
+            local sliderPos = SliderBackground.AbsolutePosition.X
+            local sliderSize = SliderBackground.AbsoluteSize.X
+            local relativePos = math.clamp(mousePos.X - sliderPos, 0, sliderSize)
+            local percentage = relativePos / sliderSize
 
-function Window:CreateTab(name)
-    local tab = {
-        Name = name,
-        Sections = {},
-        ElementY = 0,
-    }
+            currentValue = math.floor(min + (max - min) * percentage)
+            currentValue = math.clamp(currentValue, min, max)
 
-    -- Tab Button
-    local tabButton = Instance.new("TextButton")
-    tabButton.Text = name
-    tabButton.BackgroundColor3 = PutienLib.Theme.Hover
-    tabButton.TextColor3 = PutienLib.Theme.Text
-    tabButton.TextSize = 13
-    tabButton.Font = Enum.Font.GothamMedium
-    tabButton.Size = UDim2.new(0, 100, 0, 35)
-    tabButton.Position = UDim2.new(0, #self.Tabs * 105, 0, 0)
-    tabButton.BorderSizePixel = 0
-    tabButton.Parent = self.TabBar
-
-    -- Tab Content
-    local tabContent = Instance.new("Frame")
-    tabContent.Size = UDim2.new(1, 0, 1, 0)
-    tabContent.BackgroundColor3 = PutienLib.Theme.Background
-    tabContent.BorderSizePixel = 0
-    tabContent.Parent = self.ContentArea
-
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.Size = UDim2.new(1, -10, 1, 0)
-    scrollFrame.Position = UDim2.new(0, 5, 0, 0)
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.ScrollBarThickness = 4
-    scrollFrame.ScrollBarImageColor3 = PutienLib.Theme.Primary
-    scrollFrame.Parent = tabContent
-
-    tab.Content = tabContent
-    tab.ScrollFrame = scrollFrame
-
-    if #self.Tabs == 0 then
-        tabButton.BackgroundColor3 = PutienLib.Theme.Primary
-    else
-        tabContent.Visible = false
-    end
-
-    tabButton.MouseButton1Click:Connect(function()
-        for _, tc in pairs(self.ContentArea:GetChildren()) do
-            tc.Visible = false
-        end
-        tabContent.Visible = true
-
-        for _, btn in pairs(self.TabButtons) do
-            btn.BackgroundColor3 = PutienLib.Theme.Hover
-        end
-        tabButton.BackgroundColor3 = PutienLib.Theme.Primary
-    end)
-
-    table.insert(self.Tabs, tab)
-    table.insert(self.TabButtons, tabButton)
-
-    function tab:CreateSection(name)
-        local section = {
-            Name = name,
-            Y = 25,
-        }
-
-        local sectionFrame = Instance.new("Frame")
-        sectionFrame.Size = UDim2.new(1, -20, 0, 0)
-        sectionFrame.Position = UDim2.new(0, 10, 0, tab.ElementY)
-        sectionFrame.BackgroundColor3 = PutienLib.Theme.Surface
-        sectionFrame.BorderSizePixel = 0
-        sectionFrame.Parent = tab.ScrollFrame
-
-        local sectionLabel = Instance.new("TextLabel")
-        sectionLabel.Text = name
-        sectionLabel.BackgroundTransparency = 1
-        sectionLabel.TextColor3 = PutienLib.Theme.Text
-        sectionLabel.TextSize = 12
-        sectionLabel.Font = Enum.Font.GothamMedium
-        sectionLabel.Size = UDim2.new(1, -20, 0, 20)
-        sectionLabel.Position = UDim2.new(0, 10, 0, 5)
-        sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-        sectionLabel.Parent = sectionFrame
-
-        section.Container = sectionFrame
-        tab.ElementY = tab.ElementY + 50
-
-        function section:AddLabel(text)
-            local label = Instance.new("TextLabel")
-            label.Text = text
-            label.BackgroundTransparency = 1
-            label.TextColor3 = PutienLib.Theme.TextSecondary
-            label.TextSize = 12
-            label.Font = Enum.Font.GothamMedium
-            label.Size = UDim2.new(1, -20, 0, 20)
-            label.Position = UDim2.new(0, 10, 0, self.Y)
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.TextWrapped = true
-            label.Parent = self.Container
-
-            self.Y = self.Y + 25
-            self.Container.Size = UDim2.new(1, -20, 0, self.Y)
-            tab.ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tab.ElementY + self.Y)
-
-            return label
-        end
-
-        function section:AddButton(text, callback)
-            local button = Instance.new("TextButton")
-            button.Text = text
-            button.BackgroundColor3 = PutienLib.Theme.Primary
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            button.TextSize = 13
-            button.Font = Enum.Font.GothamMedium
-            button.Size = UDim2.new(1, -20, 0, 30)
-            button.Position = UDim2.new(0, 10, 0, self.Y)
-            button.BorderSizePixel = 0
-            button.Parent = self.Container
+            SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            ValueLabel.Text = tostring(currentValue)
 
             if callback then
-                button.MouseButton1Click:Connect(callback)
+                callback(currentValue)
             end
+        end
+    end)
 
-            self.Y = self.Y + 35
-            self.Container.Size = UDim2.new(1, -20, 0, self.Y)
-            tab.ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, tab.ElementY + self.Y)
+    return {
+        SetValue = function(value)
+            currentValue = value
+            local percentage = (value - min) / (max - min)
+            SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            ValueLabel.Text = tostring(math.floor(value))
+        end
+    }
+end
 
-            return button
+-- Button Function
+local function CreateButton(parent, text, callback)
+    local Button = Instance.new("TextButton")
+    Button.Name = text .. "Button"
+    Button.Size = UDim2.new(1, -20, 0, 40)
+    Button.Position = UDim2.new(0, 10, 0, 0)
+    Button.BackgroundColor3 = Color3.fromRGB(35, 45, 75)
+    Button.BorderSizePixel = 0
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(100, 200, 255)
+    Button.TextSize = 13
+    Button.Font = Enum.Font.GothamSemibold
+    Button.Parent = parent
+
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 8)
+    ButtonCorner.Parent = Button
+
+    local hoverIn = TweenService:Create(Button, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(60, 100, 150) })
+    local hoverOut = TweenService:Create(Button, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(35, 45, 75) })
+
+    Button.MouseEnter:Connect(function() hoverIn:Play() end)
+    Button.MouseLeave:Connect(function() hoverOut:Play() end)
+    Button.MouseButton1Click:Connect(callback)
+
+    return Button
+end
+
+-- Boot Screen
+local BootScreen = Instance.new("Frame")
+BootScreen.Name = "BootScreen"
+BootScreen.Size = UDim2.new(1, 0, 1, 0)
+BootScreen.Position = UDim2.new(0, 0, 0, 0)
+BootScreen.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+BootScreen.BorderSizePixel = 0
+BootScreen.Parent = MainContainer
+
+local BootCorner = Instance.new("UICorner")
+BootCorner.CornerRadius = UDim.new(0, 15)
+BootCorner.Parent = BootScreen
+
+local BootTitle = Instance.new("TextLabel")
+BootTitle.Name = "BootTitle"
+BootTitle.Size = UDim2.new(1, 0, 0, 60)
+BootTitle.Position = UDim2.new(0, 0, 0.2, -30)
+BootTitle.BackgroundTransparency = 1
+BootTitle.Text = "Initializing System"
+BootTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+BootTitle.TextSize = 20
+BootTitle.Font = Enum.Font.GothamBold
+BootTitle.Parent = BootScreen
+
+local ProgressContainer = Instance.new("Frame")
+ProgressContainer.Name = "ProgressContainer"
+ProgressContainer.Size = UDim2.new(0, 200, 0, 6)
+ProgressContainer.Position = UDim2.new(0.5, -100, 0.5, 0)
+ProgressContainer.BackgroundColor3 = Color3.fromRGB(35, 45, 75)
+ProgressContainer.BorderSizePixel = 0
+ProgressContainer.Parent = BootScreen
+
+local ProgressCorner = Instance.new("UICorner")
+ProgressCorner.CornerRadius = UDim.new(0, 3)
+ProgressCorner.Parent = ProgressContainer
+
+local ProgressBar = Instance.new("Frame")
+ProgressBar.Name = "ProgressBar"
+ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+ProgressBar.BorderSizePixel = 0
+ProgressBar.Parent = ProgressContainer
+
+local BarCorner = Instance.new("UICorner")
+BarCorner.CornerRadius = UDim.new(0, 3)
+BarCorner.Parent = ProgressBar
+
+local BootStatus = Instance.new("TextLabel")
+BootStatus.Name = "BootStatus"
+BootStatus.Size = UDim2.new(1, 0, 0, 30)
+BootStatus.Position = UDim2.new(0, 0, 0.5, 20)
+BootStatus.BackgroundTransparency = 1
+BootStatus.Text = "Loading..."
+BootStatus.TextColor3 = Color3.fromRGB(150, 150, 200)
+BootStatus.TextSize = 12
+BootStatus.Font = Enum.Font.Gotham
+BootStatus.Parent = BootScreen
+
+-- Drag functionality
+local dragging = false
+local dragStartPos = nil
+local lastMousePos = nil
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStartPos = input.Position
+        lastMousePos = input.Position
+    end
+end)
+
+TitleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        lastMousePos = input.Position
+    end
+end)
+
+local currentTween = nil
+game:GetService("RunService").RenderStepped:Connect(function()
+    if dragging and lastMousePos then
+        local delta = lastMousePos - dragStartPos
+        local targetPos = MainContainer.Position + UDim2.new(0, delta.X, 0, delta.Y)
+
+        if currentTween then
+            currentTween:Cancel()
         end
 
-        return section
+        currentTween = TweenService:Create(
+            MainContainer,
+            TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { Position = targetPos }
+        )
+        currentTween:Play()
+        dragStartPos = lastMousePos
+    end
+end)
+
+-- Boot sequence
+local function Boot()
+    local bootSteps = {
+        { text = "Initializing Core...", duration = 0.6 },
+        { text = "Loading UI Framework...", duration = 0.7 },
+        { text = "Applying Theme...", duration = 0.6 },
+        { text = "Optimizing Performance...", duration = 0.5 },
+        { text = "Ready", duration = 0.4 }
+    }
+
+    local totalDuration = 0
+    for _, step in ipairs(bootSteps) do
+        totalDuration = totalDuration + step.duration
     end
 
-    return tab
-end
+    local elapsedTime = 0
 
--- ============================================================
--- 🚀 PUBLIC API
--- ============================================================
+    for _, step in ipairs(bootSteps) do
+        BootStatus.Text = step.text
 
-function PutienLib:CreateWindow(name)
-    local window = Window.new(name or "PutienLib")
-    table.insert(self.Instances, window)
-    return window
-end
+        local progressAnim = TweenService:Create(
+            ProgressBar,
+            TweenInfo.new(step.duration, Enum.EasingStyle.Linear),
+            { Size = UDim2.new(elapsedTime / totalDuration + step.duration / totalDuration, 0, 1, 0) }
+        )
+        progressAnim:Play()
 
-function PutienLib:Boot()
-    local window = self:CreateWindow("PutienLib")
-
-    local tab = window:CreateTab("Boot")
-    local section = tab:CreateSection("System Boot")
-
-    section:AddLabel("PutienLib v" .. self.Version)
-    section:AddLabel("")
-
-    local stages = { "Initializing", "Loading Modules", "Applying Theme", "Setting Up UI", "Ready" }
-
-    for _, stage in ipairs(stages) do
-        section:AddLabel("✓ " .. stage)
-        wait(0.15)
+        elapsedTime = elapsedTime + step.duration
+        task.wait(step.duration)
     end
 
-    section:AddLabel("")
-    section:AddLabel("All Systems Online")
+    local fadeAnim = TweenService:Create(
+        BootScreen,
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        { BackgroundTransparency = 1 }
+    )
+    fadeAnim:Play()
 
-    return window
+    task.wait(0.3)
+    BootScreen:Destroy()
 end
 
-return PutienLib
+-- Main load animation
+MainContainer.Size = UDim2.new(0, 0, 0, 0)
+MainContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+local loadAnim = TweenService:Create(MainContainer, TweenInfo.new(0.4, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 750, 0, 550),
+    Position = UDim2.new(0.5, -375, 0.5, -275)
+})
+loadAnim:Play()
+
+task.wait(0.5)
+Boot()
+
+-- Demo Content
+task.wait(3.5)
+CreateNotification("Welcome", "PutienLib GUI loaded successfully!", 3)
+
+-- Add demo elements
+CreateSlider(ContentArea, "Brightness", 0, 100, 50, function(val)
+    CreateNotification("Slider", "Brightness: " .. val .. "%", 1.5)
+end)
+
+CreateButton(ContentArea, "Test Button", function()
