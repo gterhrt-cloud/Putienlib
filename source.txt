@@ -4,7 +4,7 @@
 ║                      PutienLib v1.0.0                         ║
 ║                   Modern UI Framework                         ║
 ║                                                               ║
-║         Clean Code • Dark Theme • By Marzstda                 ║
+║         Clean Code • Dark Theme • By marsztda                 ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 ]]
@@ -16,7 +16,28 @@ PutienLib.Flags = {}
 
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
+
+-- Safe CoreGui Access
+local CoreGui
+pcall(function()
+    CoreGui = game:GetService("CoreGui")
+end)
+
+-- Fallback to StarterGui if CoreGui fails
+if not CoreGui or not CoreGui:FindFirstChild("RobloxGui") then
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PutienLibGui"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    CoreGui = screenGui
+end
+
+-- Final safety fallback
+if not CoreGui then
+    CoreGui = Instance.new("Folder")
+    CoreGui.Name = "CoreGui"
+    CoreGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- ============================================================
 -- ⚙️ DARK THEME CONFIGURATION
