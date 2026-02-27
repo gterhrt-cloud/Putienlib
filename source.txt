@@ -1,116 +1,84 @@
 --[[
 ╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
 ║                      PutienLib v1.0.0                         ║
 ║                   Modern UI Framework                         ║
-║                                                               ║
-║         Clean Code • Dark Theme • By marsztda                 ║
-║                                                               ║
+║         Clean Code • Dark Theme • by marsztda                 ║
 ╚═══════════════════════════════════════════════════════════════╝
 ]]
 
 local PutienLib = {}
 PutienLib.Version = "1.0.0"
 PutienLib.Instances = {}
-PutienLib.Flags = {}
 
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- Safe CoreGui Access
-local CoreGui
-pcall(function()
-    CoreGui = game:GetService("CoreGui")
-end)
-
--- Fallback to StarterGui if CoreGui fails
-if not CoreGui or not CoreGui:FindFirstChild("RobloxGui") then
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PutienLibGui"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    CoreGui = screenGui
-end
-
--- Final safety fallback
-if not CoreGui then
-    CoreGui = Instance.new("Folder")
-    CoreGui.Name = "CoreGui"
-    CoreGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+-- Safe GUI Parent
+local GuiParent
+local function GetGuiParent()
+    if not GuiParent then
+        GuiParent = LocalPlayer:WaitForChild("PlayerGui")
+    end
+    return GuiParent
 end
 
 -- ============================================================
--- ⚙️ DARK THEME CONFIGURATION
+-- 🎨 DARK THEME
 -- ============================================================
 
 PutienLib.Theme = {
-    -- Primary Colors
     Background = Color3.fromRGB(20, 20, 20),
     Surface = Color3.fromRGB(25, 25, 25),
     Text = Color3.fromRGB(240, 240, 240),
     TextSecondary = Color3.fromRGB(180, 180, 180),
-
-    -- Accent Colors
     Primary = Color3.fromRGB(100, 160, 255),
     Success = Color3.fromRGB(100, 200, 100),
-    Warning = Color3.fromRGB(255, 180, 80),
-    Error = Color3.fromRGB(255, 100, 100),
-
-    -- UI Elements
-    Border = Color3.fromRGB(50, 50, 50),
     Hover = Color3.fromRGB(35, 35, 35),
-    Active = Color3.fromRGB(100, 160, 255),
 }
 
 -- ============================================================
--- 🎨 UTILITY FUNCTIONS
+-- 🔧 UTILITY FUNCTIONS
 -- ============================================================
 
-local function CreateFrame(properties)
+local function CreateFrame(config)
     local frame = Instance.new("Frame")
-    frame.BackgroundColor3 = properties.BackgroundColor3 or PutienLib.Theme.Background
+    frame.BackgroundColor3 = config.Color or PutienLib.Theme.Background
     frame.BorderSizePixel = 0
-    frame.Size = properties.Size or UDim2.new(1, 0, 1, 0)
-    frame.Position = properties.Position or UDim2.new(0, 0, 0, 0)
-    frame.Parent = properties.Parent
+    frame.Size = config.Size or UDim2.new(1, 0, 1, 0)
+    frame.Position = config.Position or UDim2.new(0, 0, 0, 0)
+    frame.Parent = config.Parent
     return frame
 end
 
-local function CreateLabel(text, properties)
+local function CreateLabel(text, config)
     local label = Instance.new("TextLabel")
     label.Text = text
     label.BackgroundTransparency = 1
-    label.TextColor3 = properties.TextColor3 or PutienLib.Theme.Text
-    label.TextSize = properties.TextSize or 14
+    label.TextColor3 = config.Color or PutienLib.Theme.Text
+    label.TextSize = config.Size or 13
     label.Font = Enum.Font.GothamMedium
-    label.Size = properties.Size or UDim2.new(1, 0, 0, 30)
-    label.Position = properties.Position or UDim2.new(0, 0, 0, 0)
-    label.TextXAlignment = properties.TextXAlignment or Enum.TextXAlignment.Left
-    label.Parent = properties.Parent
+    label.Size = config.Dimensions or UDim2.new(1, -20, 0, 20)
+    label.Position = config.Position or UDim2.new(0, 10, 0, 0)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextWrapped = true
+    label.Parent = config.Parent
     return label
 end
 
-local function CreateButton(text, properties)
+local function CreateButton(text, config)
     local button = Instance.new("TextButton")
     button.Text = text
-    button.BackgroundColor3 = properties.BackgroundColor3 or PutienLib.Theme.Primary
+    button.BackgroundColor3 = PutienLib.Theme.Primary
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 14
+    button.TextSize = 13
     button.Font = Enum.Font.GothamMedium
-    button.Size = properties.Size or UDim2.new(1, -20, 0, 36)
-    button.Position = properties.Position or UDim2.new(0, 10, 0, 0)
+    button.Size = config.Size or UDim2.new(1, -20, 0, 36)
+    button.Position = config.Position or UDim2.new(0, 10, 0, 0)
     button.BorderSizePixel = 0
-    button.Parent = properties.Parent
+    button.Parent = config.Parent
 
-    -- Hover Effect
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = PutienLib.Theme.Hover
-    end)
-
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = properties.BackgroundColor3 or PutienLib.Theme.Primary
-    end)
-
+    button.MouseButton1Click:Connect(config.Callback or function() end)
     return button
 end
 
@@ -121,208 +89,195 @@ end
 local Window = {}
 Window.__index = Window
 
-function Window.new(windowName, windowSize)
+function Window.new(name, size)
     local self = setmetatable({}, Window)
 
-    self.Name = windowName or "PutienLib Window"
-    self.Size = windowSize or UDim2.new(0, 450, 0, 600)
-    self.Position = UDim2.new(0.5, -225, 0.5, -300)
-    self.Visible = true
-    self.Draggable = true
-
+    self.Name = name
+    self.Size = size or UDim2.new(0, 500, 0, 650)
     self.Tabs = {}
     self.TabButtons = {}
+    self.Active = false
 
-    -- Create Main Container
+    -- Main Container
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PutienLibWindow"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = GetGuiParent()
+
+    self.ScreenGui = screenGui
+
+    -- Window Container
     self.Container = CreateFrame({
-        Parent = CoreGui,
+        Parent = screenGui,
         Size = self.Size,
-        BackgroundColor3 = PutienLib.Theme.Background,
+        Color = PutienLib.Theme.Background,
     })
 
-    -- Window Top Bar
+    -- Topbar
     local topbar = CreateFrame({
         Parent = self.Container,
         Size = UDim2.new(1, 0, 0, 40),
-        BackgroundColor3 = PutienLib.Theme.Surface,
+        Color = PutienLib.Theme.Surface,
     })
 
-    -- Window Title
     CreateLabel(self.Name, {
         Parent = topbar,
-        TextSize = 16,
-        Position = UDim2.new(0, 15, 0, 5),
-        Size = UDim2.new(1, -30, 0, 30),
+        Size = 16,
+        Dimensions = UDim2.new(1, -20, 0, 40),
+        Position = UDim2.new(0, 10, 0, 0),
     })
 
-    -- Tab Container
-    local tabContainer = CreateFrame({
+    -- Tab Bar
+    self.TabBar = CreateFrame({
         Parent = self.Container,
         Size = UDim2.new(1, 0, 0, 35),
         Position = UDim2.new(0, 0, 0, 40),
-        BackgroundColor3 = PutienLib.Theme.Surface,
+        Color = PutienLib.Theme.Surface,
     })
 
-    self.TabContainer = tabContainer
-    self.TabScrollFrame = tabContainer
-
-    -- Content Container
-    local contentContainer = CreateFrame({
+    -- Content Area
+    self.ContentContainer = CreateFrame({
         Parent = self.Container,
         Size = UDim2.new(1, 0, 1, -75),
         Position = UDim2.new(0, 0, 0, 75),
-        BackgroundColor3 = PutienLib.Theme.Background,
+        Color = PutienLib.Theme.Background,
     })
 
-    self.ContentContainer = contentContainer
+    -- Drag
+    local dragging = false
+    local dragStart
+    local dragPos
 
-    -- Handle Dragging
-    if self.Draggable then
-        local dragging = false
-        local dragStart
-        local containerStart
+    topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            dragPos = self.Container.Position
+        end
+    end)
 
-        topbar.InputBegan:Connect(function(input, gameProcessed)
-            if gameProcessed then return end
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                containerStart = self.Container.Position
-            end
-        end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            self.Container.Position = dragPos + UDim2.new(0, delta.X, 0, delta.Y)
+        end
+    end)
 
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                self.Container.Position = containerStart + UDim2.new(0, delta.X, 0, delta.Y)
-            end
-        end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 
-        UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-    end
-
+    self.Active = true
     return self
 end
 
-function Window:CreateTab(tabName, icon)
+function Window:CreateTab(name)
     local tab = {
-        Name = tabName,
-        Icon = icon,
+        Name = name,
         Sections = {},
     }
 
-    -- Create Tab Button
-    local tabButton = CreateButton(tabName, {
-        Parent = self.TabContainer,
+    -- Tab Button
+    local tabBtn = CreateButton(name, {
+        Parent = self.TabBar,
         Size = UDim2.new(0, 100, 0, 35),
-        Position = UDim2.new(0, (#self.Tabs * 105), 0, 0),
-        BackgroundColor3 = PutienLib.Theme.Hover,
+        Position = UDim2.new(0, #self.Tabs * 105, 0, 0),
+        Callback = function()
+            for _, tc in pairs(self.ContentContainer:GetChildren()) do
+                tc.Visible = false
+            end
+            tab.Content.Visible = true
+
+            for _, tb in pairs(self.TabButtons) do
+                tb.BackgroundColor3 = PutienLib.Theme.Hover
+            end
+            tabBtn.BackgroundColor3 = PutienLib.Theme.Primary
+        end
     })
 
-    -- Create Tab Content
+    -- Tab Content
     local tabContent = CreateFrame({
         Parent = self.ContentContainer,
         Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = PutienLib.Theme.Background,
+        Color = PutienLib.Theme.Background,
     })
 
-    -- Create ScrollFrame for Content
     local scrollFrame = Instance.new("ScrollingFrame")
     scrollFrame.BackgroundTransparency = 1
     scrollFrame.BorderSizePixel = 0
     scrollFrame.Size = UDim2.new(1, -10, 1, 0)
     scrollFrame.Position = UDim2.new(0, 5, 0, 0)
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.ScrollBarThickness = 6
+    scrollFrame.ScrollBarThickness = 4
     scrollFrame.ScrollBarImageColor3 = PutienLib.Theme.Primary
     scrollFrame.Parent = tabContent
 
-    tab.Content = scrollFrame
+    tab.Content = tabContent
+    tab.ScrollFrame = scrollFrame
+    tab.ElementY = 0
 
-    -- Tab Click Handler
-    tabButton.MouseButton1Click:Connect(function()
-        for _, content in pairs(self.ContentContainer:GetChildren()) do
-            content.Visible = false
-        end
-        tabContent.Visible = true
-
-        for _, btn in pairs(self.TabButtons) do
-            btn.BackgroundColor3 = PutienLib.Theme.Hover
-        end
-        tabButton.BackgroundColor3 = PutienLib.Theme.Primary
-    end)
-
-    table.insert(self.Tabs, tab)
-    table.insert(self.TabButtons, tabButton)
-
-    if #self.Tabs == 1 then
-        tabButton.BackgroundColor3 = PutienLib.Theme.Primary
+    if #self.Tabs == 0 then
+        tabBtn.BackgroundColor3 = PutienLib.Theme.Primary
     else
         tabContent.Visible = false
     end
 
-    -- Tab Methods
-    function tab:CreateSection(sectionName)
-        return self:_CreateSection(sectionName)
-    end
+    table.insert(self.Tabs, tab)
+    table.insert(self.TabButtons, tabBtn)
 
-    function tab:_CreateSection(sectionName)
+    function tab:CreateSection(name)
         local section = {
-            Name = sectionName,
+            Name = name,
             Elements = {},
         }
 
-        -- Section Frame
         local sectionFrame = CreateFrame({
-            Parent = self.Content,
+            Parent = tab.ScrollFrame,
             Size = UDim2.new(1, -20, 0, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            BackgroundColor3 = PutienLib.Theme.Surface,
+            Position = UDim2.new(0, 10, 0, tab.ElementY),
+            Color = PutienLib.Theme.Surface,
         })
 
-        -- Section Header
-        CreateLabel(sectionName, {
+        CreateLabel(name, {
             Parent = sectionFrame,
-            TextSize = 14,
+            Size = 12,
+            Dimensions = UDim2.new(1, -20, 0, 20),
             Position = UDim2.new(0, 10, 0, 5),
-            Size = UDim2.new(1, -20, 0, 20),
+            Color = PutienLib.Theme.Text,
         })
 
         section.Container = sectionFrame
-        table.insert(self.Sections, section)
+        section.Y = 25
+        tab.ElementY = tab.ElementY + 50
 
-        -- Section Methods
-        function section:CreateButton(buttonName, callback)
-            local buttonElement = CreateButton(buttonName, {
-                Parent = self.Container,
-                Size = UDim2.new(1, -20, 0, 36),
-                Position = UDim2.new(0, 10, 0, 0),
-            })
-
-            if callback then
-                buttonElement.MouseButton1Click:Connect(callback)
-            end
-
-            table.insert(self.Elements, buttonElement)
-            return buttonElement
-        end
-
-        function section:CreateLabel(text)
+        function section:AddLabel(text)
             local label = CreateLabel(text, {
                 Parent = self.Container,
-                TextSize = 13,
-                Position = UDim2.new(0, 10, 0, 0),
-                Size = UDim2.new(1, -20, 0, 25),
+                Size = 12,
+                Dimensions = UDim2.new(1, -20, 0, 20),
+                Position = UDim2.new(0, 10, 0, self.Y),
+                Color = PutienLib.Theme.TextSecondary,
             })
-
-            table.insert(self.Elements, label)
+            self.Y = self.Y + 25
+            self.Container.Size = UDim2.new(1, -20, 0, self.Y)
             return label
         end
 
+        function section:AddButton(text, callback)
+            local btn = CreateButton(text, {
+                Parent = self.Container,
+                Size = UDim2.new(1, -20, 0, 30),
+                Position = UDim2.new(0, 10, 0, self.Y),
+                Callback = callback,
+            })
+            self.Y = self.Y + 35
+            self.Container.Size = UDim2.new(1, -20, 0, self.Y)
+            return btn
+        end
+
+        table.insert(tab.Sections, section)
         return section
     end
 
@@ -330,74 +285,53 @@ function Window:CreateTab(tabName, icon)
 end
 
 function Window:Show()
-    self.Container.Visible = true
-    self.Visible = true
+    self.ScreenGui.Enabled = true
 end
 
 function Window:Hide()
-    self.Container.Visible = false
-    self.Visible = false
+    self.ScreenGui.Enabled = false
 end
 
 function Window:Destroy()
-    self.Container:Destroy()
+    self.ScreenGui:Destroy()
 end
 
 -- ============================================================
--- 🚀 BOOT SYSTEM
+-- 🚀 CREATE & BOOT
 -- ============================================================
 
-function PutienLib:Initialize()
-    print("╔════════════════════════════════════════╗")
-    print("║     PutienLib v" .. self.Version .. " Initializing       ║")
-    print("║     Dark Theme • Modern UI              ║")
-    print("╚════════════════════════════════════════╝")
-
-    return true
-end
-
-function PutienLib:CreateWindow(name, size)
-    self:Initialize()
-
-    local window = Window.new(name, size)
+function PutienLib:CreateWindow(name)
+    local window = Window.new(name)
     table.insert(self.Instances, window)
-
-    print("✓ Window created: " .. name)
-
     return window
 end
 
-function PutienLib:Notify(title, message, duration)
-    duration = duration or 3
+function PutienLib:Boot()
+    local window = self:CreateWindow("PutienLib")
 
-    local notificationContainer = CreateFrame({
-        Parent = CoreGui,
-        Size = UDim2.new(0, 300, 0, 100),
-        Position = UDim2.new(1, -320, 0, 20),
-        BackgroundColor3 = PutienLib.Theme.Surface,
-    })
+    local bootTab = window:CreateTab("Boot")
+    local bootSection = bootTab:CreateSection("System Boot")
 
-    CreateLabel(title, {
-        Parent = notificationContainer,
-        TextSize = 14,
-        Position = UDim2.new(0, 10, 0, 10),
-        Size = UDim2.new(1, -20, 0, 20),
-    })
+    bootSection:AddLabel("PutienLib v" .. self.Version)
+    bootSection:AddLabel("")
 
-    CreateLabel(message, {
-        Parent = notificationContainer,
-        TextSize = 12,
-        TextColor3 = PutienLib.Theme.TextSecondary,
-        Position = UDim2.new(0, 10, 0, 40),
-        Size = UDim2.new(1, -20, 0, 50),
-    })
+    local stages = {
+        "Initializing",
+        "Loading Modules",
+        "Applying Theme",
+        "Setting Up UI",
+        "Ready",
+    }
 
-    game:GetService("Debris"):AddItem(notificationContainer, duration)
-    print("📢 " .. title .. ": " .. message)
+    for _, stage in ipairs(stages) do
+        bootSection:AddLabel("✓ " .. stage)
+        wait(0.15)
+    end
+
+    bootSection:AddLabel("")
+    bootSection:AddLabel("All Systems Online")
+
+    return window
 end
-
--- ============================================================
--- 📊 EXPORT
--- ============================================================
 
 return PutienLib
